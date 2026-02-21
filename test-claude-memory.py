@@ -55,6 +55,9 @@ def collect_entries(current_path: Path, extra_fn=None):
         entries.append(("CLAUDE.md", read_content(claude_md)))
     if level_md.exists():
         entries.append((".claude/commands/level.md", read_content(level_md)))
+    rootpath_md = current_path / ".claude" / "commands" / "rootpath.md"
+    if rootpath_md.exists():
+        entries.append((".claude/commands/rootpath.md", read_content(rootpath_md)))
 
     if extra_fn and claude_md.exists():
         for label, text in extra_fn(current_path):
@@ -129,7 +132,7 @@ def run_claude_prompt(directory: Path, prompt: str, from_root: bool) -> str:
 def run_claude_command(directory: Path, command: str) -> str:
     """Run a claude slash command and return its stdout."""
     result = subprocess.run(
-        ["claude", "-p", command],
+        ["claude", "-p", command, "--allowedTools", "Bash(git rev-parse*)"],
         cwd=directory,
         capture_output=True,
         text=True,
@@ -178,10 +181,9 @@ def main():
             extras = []
             answer = run_claude_prompt(directory, args.prompt, args.from_root)
             extras.append((f"prompt: {args.prompt}", answer))
-            level_md = directory / ".claude" / "commands" / "level.md"
-            if level_md.exists():
-                response = run_claude_command(directory, "/level")
-                extras.append(("/level:", response))
+            commands_prompt = "Execute the /level command and the /rootpath command"
+            response = run_claude_command(directory, commands_prompt)
+            extras.append(("/level + /rootpath:", response))
             return extras
         show_tree(tree, root, root, extra_fn=get_extras)
 
