@@ -1,1 +1,0 @@
-The temperature is 3°F

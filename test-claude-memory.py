@@ -45,41 +45,51 @@ def print_indented(text: str, prefix: str) -> None:
         print(f"{prefix}  {line}")
 
 
+def collect_entries(current_path: Path, extra_fn=None):
+    """Collect displayable entries (files + extras) for a directory node."""
+    entries = []
+    claude_md = current_path / "CLAUDE.md"
+    level_md = current_path / ".claude" / "commands" / "level.md"
+
+    if claude_md.exists():
+        entries.append(("CLAUDE.md", read_content(claude_md)))
+    if level_md.exists():
+        entries.append((".claude/commands/level.md", read_content(level_md)))
+
+    if extra_fn and claude_md.exists():
+        for label, text in extra_fn(current_path):
+            entries.append((label, text))
+
+    return entries
+
+
 def show_tree(
     tree: dict,
     root: Path,
     current_path: Path,
     prefix: str = "",
-    extra_fn: Callable[[Path], str | None] | None = None,
+    extra_fn: Callable[[Path], list[tuple[str, str]]] | None = None,
 ) -> None:
-    """Render the tree with CLAUDE.md contents, styled like `tree` output."""
-    claude_md = current_path / "CLAUDE.md"
-    has_claude_md = claude_md.exists()
+    """Render the tree with file contents, styled like `tree` output."""
     children = sorted(tree.keys())
-    has_extra = extra_fn is not None and has_claude_md
+    entries = collect_entries(current_path, extra_fn)
 
-    # Items after CLAUDE.md: extra block (if any), then children
-    remaining_after_md = (1 if has_extra else 0) + len(children)
+    total_items = len(entries) + len(children)
+    item_index = 0
 
-    # Print CLAUDE.md for this directory if it exists
-    if has_claude_md:
-        connector = "├── " if remaining_after_md > 0 else "└── "
-        continuation = "│   " if remaining_after_md > 0 else "    "
-        print(f"{prefix}{connector}CLAUDE.md")
-        print_indented(read_content(claude_md), f"{prefix}{continuation}")
-
-    # Print extra content (e.g. claude answer) if provided
-    if has_extra:
-        extra = extra_fn(current_path)
-        connector = "├── " if children else "└── "
-        continuation = "│   " if children else "    "
-        print(f"{prefix}{connector}answer:")
-        if extra:
-            print_indented(extra.strip(), f"{prefix}{continuation}")
+    # Print file entries and extras
+    for label, content in entries:
+        item_index += 1
+        is_last = (item_index == total_items)
+        connector = "└── " if is_last else "├── "
+        continuation = "    " if is_last else "│   "
+        print(f"{prefix}{connector}{label}")
+        print_indented(content.strip(), f"{prefix}{continuation}")
 
     # Print child directories
-    for i, child in enumerate(children):
-        is_last = (i == len(children) - 1)
+    for child in children:
+        item_index += 1
+        is_last = (item_index == total_items)
         connector = "└── " if is_last else "├── "
         continuation = "    " if is_last else "│   "
         print(f"{prefix}{connector}{child}/")
@@ -89,8 +99,8 @@ def show_tree(
         )
 
 
-def run_claude(directory: Path, prompt: str, from_root: bool) -> str | None:
-    """Run claude and return its stdout."""
+def run_claude_prompt(directory: Path, prompt: str, from_root: bool) -> str:
+    """Run claude with a prompt and return its stdout."""
     if from_root:
         target = directory / "answer.txt"
         file_prompt = f'{prompt} Write the answer to {target}.'
@@ -103,7 +113,7 @@ def run_claude(directory: Path, prompt: str, from_root: bool) -> str | None:
             print(result.stderr, end="", file=sys.stderr)
         if target.exists():
             return target.read_text()
-        return result.stdout or None
+        return result.stdout or ""
     else:
         result = subprocess.run(
             ["claude", "-p", prompt],
@@ -113,7 +123,20 @@ def run_claude(directory: Path, prompt: str, from_root: bool) -> str | None:
         )
         if result.stderr:
             print(result.stderr, end="", file=sys.stderr)
-        return result.stdout or None
+        return result.stdout or ""
+
+
+def run_claude_command(directory: Path, command: str) -> str:
+    """Run a claude slash command and return its stdout."""
+    result = subprocess.run(
+        ["claude", "-p", command],
+        cwd=directory,
+        capture_output=True,
+        text=True,
+    )
+    if result.stderr:
+        print(result.stderr, end="", file=sys.stderr)
+    return result.stdout or ""
 
 
 def main():
@@ -151,9 +174,16 @@ def main():
     if args.command == "show":
         show_tree(tree, root, root)
     elif args.command == "run":
-        def get_answer(directory: Path) -> str | None:
-            return run_claude(directory, args.prompt, args.from_root)
-        show_tree(tree, root, root, extra_fn=get_answer)
+        def get_extras(directory: Path) -> list[tuple[str, str]]:
+            extras = []
+            answer = run_claude_prompt(directory, args.prompt, args.from_root)
+            extras.append((f"prompt: {args.prompt}", answer))
+            level_md = directory / ".claude" / "commands" / "level.md"
+            if level_md.exists():
+                response = run_claude_command(directory, "/level")
+                extras.append(("/level:", response))
+            return extras
+        show_tree(tree, root, root, extra_fn=get_extras)
 
 
 if __name__ == "__main__":
