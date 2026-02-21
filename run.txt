@@ -1,0 +1,92 @@
+.
+├── CLAUDE.md
+│     My name is Ted
+│     My favorite color is Red
+│     My favorite movie is Raiders of the Lost Ark
+│     The temperature is 0°F
+├── .claude/commands/level.md
+│     Respond with only this exact text, nothing else: LEVEL=root
+├── .claude/commands/rootpath.md
+│     Run `git rev-parse --show-toplevel` to find the repo root,
+│     then determine the relative path from the current working
+│     directory back to that root. Respond with only this exact
+│     format, nothing else: root is <relative-path>
+│     
+│     For example, if cwd is the repo root: "root is ."
+│     If cwd is one level deep: "root is .."
+│     If cwd is two levels deep: "root is ../.."
+├── What is my name, favorite color, favorite movie, and the current
+│   temperature? emit only as well formatted json with attributes for each
+│   value:
+│     ```json
+│     {
+│       "name": "Ted",
+│       "favorite_color": "Red",
+│       "favorite_movie": "Raiders of the Lost Ark",
+│       "temperature": "0°F"
+│     }
+│     ```
+├── /level + /rootpath:
+│     root is .
+├── first/
+│   ├── CLAUDE.md
+│   │     My favorite color is Fuchsia
+│   │     My favorite movie is The Fantastic Mr Fox
+│   │     The temperature is 1°F
+│   ├── .claude/commands/level.md
+│   │     Respond with only this exact text, nothing else: LEVEL=first
+│   ├── What is my name, favorite color, favorite movie, and the current
+│   │   temperature? emit only as well formatted json with attributes for each
+│   │   value:
+│   │     ```json
+│   │     {
+│   │       "name": "Ted",
+│   │       "favorite_color": "Fuchsia",
+│   │       "favorite_movie": "The Fantastic Mr Fox",
+│   │       "temperature": "1°F"
+│   │     }
+│   │     ```
+│   ├── /level + /rootpath:
+│   │     LEVEL=first
+│   │     root is ..
+│   └── second/
+│       ├── CLAUDE.md
+│       │     My favorite color is Scarlet
+│       │     The temperature is 2°F
+│       ├── .claude/commands/level.md
+│       │     Respond with only this exact text, nothing else: LEVEL=second
+│       ├── What is my name, favorite color, favorite movie, and the current
+│       │   temperature? emit only as well formatted json with attributes for
+│       │   each value:
+│       │     ```json
+│       │     {
+│       │       "name": "Ted",
+│       │       "favorite_color": "Scarlet",
+│       │       "favorite_movie": "The Fantastic Mr Fox",
+│       │       "temperature": "2°F"
+│       │     }
+│       │     ```
+│       └── /level + /rootpath:
+│             LEVEL=second
+│             
+│             root is ../..
+└── sibling/
+    ├── CLAUDE.md
+    │     My favorite color is Silver
+    │     My favorite movie is Stop Making Sense
+    │     The temperature is -10°F
+    ├── .claude/commands/level.md
+    │     Respond with only this exact text, nothing else: LEVEL=sibling
+    ├── What is my name, favorite color, favorite movie, and the current
+    │   temperature? emit only as well formatted json with attributes for each
+    │   value:
+    │     ```json
+    │     {
+    │       "name": "Ted",
+    │       "favorite_color": "Silver",
+    │       "favorite_movie": "Stop Making Sense",
+    │       "temperature": "-10°F"
+    │     }
+    │     ```
+    └── /level + /rootpath:
+          root is ..

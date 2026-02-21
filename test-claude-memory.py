@@ -9,6 +9,7 @@
 import argparse
 import subprocess
 import sys
+import textwrap
 from collections.abc import Callable
 from pathlib import Path
 
@@ -90,7 +91,13 @@ def show_tree(
         is_last = (item_index == total_items)
         connector = "└── " if is_last else "├── "
         continuation = "    " if is_last else "│   "
-        print(f"{prefix}{connector}{label}")
+        label_col = len(prefix) + len(connector)
+        wrap_width = max(80 - label_col, 20)
+        wrapped = textwrap.wrap(label, width=wrap_width)
+        print(f"{prefix}{connector}{wrapped[0]}")
+        label_padding = " " * (label_col - len(prefix) - len(continuation))
+        for wrap_line in wrapped[1:]:
+            print(f"{prefix}{continuation}{label_padding}{wrap_line}")
         sys.stdout.flush()
         if callable(content):
             content = content()
@@ -189,7 +196,7 @@ def main():
         def get_extras(directory: Path) -> list[Entry]:
             commands_prompt = "Execute the /level command and the /rootpath command"
             return [
-                (f"prompt: {args.prompt}",
+                (f"{args.prompt}:",
                  lambda d=directory: run_claude_prompt(d, args.prompt, args.from_root)),
                 ("/level + /rootpath:",
                  lambda d=directory: run_claude_command(d, commands_prompt)),

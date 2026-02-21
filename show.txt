@@ -1,0 +1,37 @@
+.
+├── CLAUDE.md
+│     My name is Ted
+│     My favorite color is Red
+│     My favorite movie is Raiders of the Lost Ark
+│     The temperature is 0°F
+├── .claude/commands/level.md
+│     Respond with only this exact text, nothing else: LEVEL=root
+├── .claude/commands/rootpath.md
+│     Run `git rev-parse --show-toplevel` to find the repo root,
+│     then determine the relative path from the current working
+│     directory back to that root. Respond with only this exact
+│     format, nothing else: root is <relative-path>
+│     
+│     For example, if cwd is the repo root: "root is ."
+│     If cwd is one level deep: "root is .."
+│     If cwd is two levels deep: "root is ../.."
+├── first/
+│   ├── CLAUDE.md
+│   │     My favorite color is Fuchsia
+│   │     My favorite movie is The Fantastic Mr Fox
+│   │     The temperature is 1°F
+│   ├── .claude/commands/level.md
+│   │     Respond with only this exact text, nothing else: LEVEL=first
+│   └── second/
+│       ├── CLAUDE.md
+│       │     My favorite color is Scarlet
+│       │     The temperature is 2°F
+│       └── .claude/commands/level.md
+│             Respond with only this exact text, nothing else: LEVEL=second
+└── sibling/
+    ├── CLAUDE.md
+    │     My favorite color is Silver
+    │     My favorite movie is Stop Making Sense
+    │     The temperature is -10°F
+    └── .claude/commands/level.md
+          Respond with only this exact text, nothing else: LEVEL=sibling
