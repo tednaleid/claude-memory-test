@@ -12,6 +12,9 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+# Entry is (label, content_str) for static or (label, callable) for deferred
+type Entry = tuple[str, str | Callable[[], str]]
+
 
 def find_claude_md_dirs(root: Path) -> list[Path]:
     """Find all directories containing CLAUDE.md, sorted by depth then name."""
@@ -45,23 +48,19 @@ def print_indented(text: str, prefix: str) -> None:
         print(f"{prefix}  {line}")
 
 
-def collect_entries(current_path: Path, extra_fn=None):
-    """Collect displayable entries (files + extras) for a directory node."""
-    entries = []
+def static_entries(current_path: Path) -> list[Entry]:
+    """Collect file-based entries for a directory node."""
+    entries: list[Entry] = []
     claude_md = current_path / "CLAUDE.md"
     level_md = current_path / ".claude" / "commands" / "level.md"
+    rootpath_md = current_path / ".claude" / "commands" / "rootpath.md"
 
     if claude_md.exists():
         entries.append(("CLAUDE.md", read_content(claude_md)))
     if level_md.exists():
         entries.append((".claude/commands/level.md", read_content(level_md)))
-    rootpath_md = current_path / ".claude" / "commands" / "rootpath.md"
     if rootpath_md.exists():
         entries.append((".claude/commands/rootpath.md", read_content(rootpath_md)))
-
-    if extra_fn and claude_md.exists():
-        for label, text in extra_fn(current_path):
-            entries.append((label, text))
 
     return entries
 
@@ -71,23 +70,32 @@ def show_tree(
     root: Path,
     current_path: Path,
     prefix: str = "",
-    extra_fn: Callable[[Path], list[tuple[str, str]]] | None = None,
+    extra_fn: Callable[[Path], list[Entry]] | None = None,
 ) -> None:
     """Render the tree with file contents, styled like `tree` output."""
     children = sorted(tree.keys())
-    entries = collect_entries(current_path, extra_fn)
+    file_entries = static_entries(current_path)
+    has_claude_md = (current_path / "CLAUDE.md").exists()
+    extra_entries: list[Entry] = []
+    if extra_fn and has_claude_md:
+        extra_entries = extra_fn(current_path)
 
-    total_items = len(entries) + len(children)
+    all_entries = file_entries + extra_entries
+    total_items = len(all_entries) + len(children)
     item_index = 0
 
-    # Print file entries and extras
-    for label, content in entries:
+    # Print all entries (static files print content immediately, deferred flush then wait)
+    for label, content in all_entries:
         item_index += 1
         is_last = (item_index == total_items)
         connector = "└── " if is_last else "├── "
         continuation = "    " if is_last else "│   "
         print(f"{prefix}{connector}{label}")
+        sys.stdout.flush()
+        if callable(content):
+            content = content()
         print_indented(content.strip(), f"{prefix}{continuation}")
+        sys.stdout.flush()
 
     # Print child directories
     for child in children:
@@ -96,6 +104,7 @@ def show_tree(
         connector = "└── " if is_last else "├── "
         continuation = "    " if is_last else "│   "
         print(f"{prefix}{connector}{child}/")
+        sys.stdout.flush()
         show_tree(
             tree[child], root, current_path / child,
             prefix + continuation, extra_fn,
@@ -177,14 +186,14 @@ def main():
     if args.command == "show":
         show_tree(tree, root, root)
     elif args.command == "run":
-        def get_extras(directory: Path) -> list[tuple[str, str]]:
-            extras = []
-            answer = run_claude_prompt(directory, args.prompt, args.from_root)
-            extras.append((f"prompt: {args.prompt}", answer))
+        def get_extras(directory: Path) -> list[Entry]:
             commands_prompt = "Execute the /level command and the /rootpath command"
-            response = run_claude_command(directory, commands_prompt)
-            extras.append(("/level + /rootpath:", response))
-            return extras
+            return [
+                (f"prompt: {args.prompt}",
+                 lambda d=directory: run_claude_prompt(d, args.prompt, args.from_root)),
+                ("/level + /rootpath:",
+                 lambda d=directory: run_claude_command(d, commands_prompt)),
+            ]
         show_tree(tree, root, root, extra_fn=get_extras)
 
 
