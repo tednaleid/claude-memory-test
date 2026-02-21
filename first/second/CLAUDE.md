@@ -1,2 +1,2 @@
 My favorite color is Scarlet
-My favorite movie is Seven Samurai
+The temperature is 2°F
