@@ -1,3 +1,4 @@
-My favorite color is Silver
-My favorite movie is Stop Making Sense
-The temperature is -10°F
+# Known Facts
+favorite_color: Silver
+favorite_movie: Stop Making Sense
+temperature: -10°F

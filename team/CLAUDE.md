@@ -1,3 +1,4 @@
-My name is Ted
-The team name is MyTeam
-My favorite color is Teal
+# Known Facts
+name: Ted
+team_name: MyTeam
+favorite_color: Teal

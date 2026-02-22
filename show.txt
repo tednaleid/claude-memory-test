@@ -2,9 +2,10 @@
 ├── CLAUDE.md
 │     @team/CLAUDE.md
 │     
-│     My favorite color is Red
-│     My favorite movie is Raiders of the Lost Ark
-│     The temperature is 0°F
+│     # Known Facts
+│     favorite_color: Red
+│     favorite_movie: Raiders of the Lost Ark
+│     temperature: 0°F
 ├── .claude/commands/level.md
 │     Respond with only this exact text, nothing else: LEVEL=root
 ├── .claude/commands/rootpath.md
@@ -24,32 +25,38 @@
 │     - favorite_color: from your CLAUDE.md context
 │     - favorite_movie: from your CLAUDE.md context
 │     - temperature: from your CLAUDE.md context
-│     - team_script_output: execute team-info.py and include its stdout verbatim
+│     - team_script_output: run `$(git rev-parse --show-toplevel)/team/team-info.py` and include its stdout verbatim
+│     - level: respond with exactly what the /level command specifies
+│     - rootpath: run `git rev-parse --show-toplevel`, compute the relative path from CWD back to that root, and respond in the format "root is <relative-path>" (e.g. "root is ." at root, "root is .." one level deep)
 ├── first/
 │   ├── CLAUDE.md
-│   │     My favorite color is Fuchsia
-│   │     My favorite movie is The Fantastic Mr Fox
-│   │     The temperature is 1°F
+│   │     # Known Facts
+│   │     favorite_color: Fuchsia
+│   │     favorite_movie: The Fantastic Mr Fox
+│   │     temperature: 1°F
 │   ├── .claude/commands/level.md
 │   │     Respond with only this exact text, nothing else: LEVEL=first
 │   └── second/
 │       ├── CLAUDE.md
-│       │     My favorite color is Scarlet
-│       │     The temperature is 2°F
+│       │     # Known Facts
+│       │     favorite_color: Scarlet
+│       │     temperature: 2°F
 │       └── .claude/commands/level.md
 │             Respond with only this exact text, nothing else: LEVEL=second
 ├── sibling/
 │   ├── CLAUDE.md
-│   │     My favorite color is Silver
-│   │     My favorite movie is Stop Making Sense
-│   │     The temperature is -10°F
+│   │     # Known Facts
+│   │     favorite_color: Silver
+│   │     favorite_movie: Stop Making Sense
+│   │     temperature: -10°F
 │   └── .claude/commands/level.md
 │         Respond with only this exact text, nothing else: LEVEL=sibling
 └── team/
     ├── CLAUDE.md
-    │     My name is Ted
-    │     The team name is MyTeam
-    │     My favorite color is Teal
+    │     # Known Facts
+    │     name: Ted
+    │     team_name: MyTeam
+    │     favorite_color: Teal
     ├── .claude/commands/report.md
     │     Return ONLY a JSON object with these exact keys (no markdown, no code fences, just raw JSON):
     │     
@@ -58,7 +65,9 @@
     │     - favorite_color: from your CLAUDE.md context
     │     - favorite_movie: from your CLAUDE.md context
     │     - temperature: from your CLAUDE.md context
-    │     - team_script_output: execute team-info.py and include its stdout verbatim
+    │     - team_script_output: run `$(git rev-parse --show-toplevel)/team/team-info.py` and include its stdout verbatim
+    │     - level: respond with exactly what the /level command specifies
+    │     - rootpath: run `git rev-parse --show-toplevel`, compute the relative path from CWD back to that root, and respond in the format "root is <relative-path>" (e.g. "root is ." at root, "root is .." one level deep)
     └── team-info.py
           #!/usr/bin/env -S uv run --script
           # /// script

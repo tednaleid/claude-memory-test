@@ -1,3 +1,4 @@
-My favorite color is Fuchsia
-My favorite movie is The Fantastic Mr Fox
-The temperature is 1°F
+# Known Facts
+favorite_color: Fuchsia
+favorite_movie: The Fantastic Mr Fox
+temperature: 1°F

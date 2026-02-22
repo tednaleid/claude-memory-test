@@ -1,2 +1,3 @@
-My favorite color is Scarlet
-The temperature is 2°F
+# Known Facts
+favorite_color: Scarlet
+temperature: 2°F
