@@ -7,6 +7,7 @@
 # ABOUTME: Finds all dirs with CLAUDE.md, shows contents, and queries claude with a prompt.
 
 import argparse
+import os
 import subprocess
 import sys
 import textwrap
@@ -55,6 +56,8 @@ def static_entries(current_path: Path) -> list[Entry]:
     claude_md = current_path / "CLAUDE.md"
     level_md = current_path / ".claude" / "commands" / "level.md"
     rootpath_md = current_path / ".claude" / "commands" / "rootpath.md"
+    report_md = current_path / ".claude" / "commands" / "report.md"
+    team_info = current_path / "team-info.py"
 
     if claude_md.exists():
         entries.append(("CLAUDE.md", read_content(claude_md)))
@@ -62,6 +65,14 @@ def static_entries(current_path: Path) -> list[Entry]:
         entries.append((".claude/commands/level.md", read_content(level_md)))
     if rootpath_md.exists():
         entries.append((".claude/commands/rootpath.md", read_content(rootpath_md)))
+    if report_md.exists():
+        label = ".claude/commands/report.md"
+        if report_md.is_symlink():
+            target = os.readlink(report_md)
+            label += f" -> {target}"
+        entries.append((label, read_content(report_md)))
+    if team_info.exists():
+        entries.append(("team-info.py", read_content(team_info)))
 
     return entries
 
@@ -148,7 +159,9 @@ def run_claude_prompt(directory: Path, prompt: str, from_root: bool) -> str:
 def run_claude_command(directory: Path, command: str) -> str:
     """Run a claude slash command and return its stdout."""
     result = subprocess.run(
-        ["claude", "-p", command, "--allowedTools", "Bash(git rev-parse*)"],
+        ["claude", "-p", command,
+         "--allowedTools", "Bash(git rev-parse*)",
+         "--allowedTools", "Bash(*team-info*)"],
         cwd=directory,
         capture_output=True,
         text=True,
@@ -167,13 +180,6 @@ def main():
     subparsers.add_parser("show", help="Show directory tree with CLAUDE.md contents")
 
     run_parser = subparsers.add_parser("run", help="Run claude in each directory")
-    DEFAULT_PROMPT = ("What is my name, favorite color, favorite movie,"
-                      " and the current temperature? emit only as well formatted"
-                      " json with attributes for each value")
-    run_parser.add_argument(
-        "prompt", nargs="?", default=DEFAULT_PROMPT,
-        help="Prompt to send to claude in each directory",
-    )
     run_parser.add_argument(
         "--from-root", action="store_true",
         help="Run claude from root dir, writing answer.txt in each subdirectory",
@@ -193,13 +199,16 @@ def main():
     if args.command == "show":
         show_tree(tree, root, root)
     elif args.command == "run":
+        team_dir = root / "team"
+
         def get_extras(directory: Path) -> list[Entry]:
-            commands_prompt = "Execute the /level command and the /rootpath command"
+            if directory == team_dir:
+                return []
+            combined = ("Execute the /report command, the /level command,"
+                        " and the /rootpath command")
             return [
-                (f"{args.prompt}:",
-                 lambda d=directory: run_claude_prompt(d, args.prompt, args.from_root)),
-                ("/level + /rootpath:",
-                 lambda d=directory: run_claude_command(d, commands_prompt)),
+                ("/report + /level + /rootpath:",
+                 lambda d=directory: run_claude_command(d, combined)),
             ]
         show_tree(tree, root, root, extra_fn=get_extras)
 
