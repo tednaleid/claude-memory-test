@@ -204,11 +204,10 @@ def main():
         def get_extras(directory: Path) -> list[Entry]:
             if directory == team_dir:
                 return []
-            combined = ("Execute the /report command, the /level command,"
-                        " and the /rootpath command")
             return [
-                ("/report + /level + /rootpath:",
-                 lambda d=directory: run_claude_command(d, combined)),
+                ("/report:",
+                 lambda d=directory: run_claude_command(
+                     d, "Execute the /report command")),
             ]
         show_tree(tree, root, root, extra_fn=get_extras)
 
