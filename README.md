@@ -19,27 +19,13 @@ The `team/` directory contains:
 
 The symlink is created by `just setup` (run automatically before `show`/`run`). This mirrors a real-world pattern where `team/` is a separate repo and symlinks are created after checkout.
 
-**Real-world note**: In this single-git-repo test, commands inherit from parent `.claude/commands/` directories. In a real multi-repo workspace with separate git repos, commands/skills/agents do NOT traverse parent directories — you'd need `--add-dir`, `~/.claude/commands/` symlinks, or plugins.
+Symlinks are necessary as we can't `@-include` them like we can the `team/CLAUDE.md` file in the root `CLAUDE.md`.
 
-## Manual Testing (recommended)
+### Setup: approving external @-includes
 
-The most reliable way to test is interactively. `cd` into any directory and run `claude`, then:
+External `@-includes` in CLAUDE.md (like `@team/CLAUDE.md`) require a one-time approval prompt. This prompt only appears in interactive mode — run `claude` interactively once from any directory in the project and accept the "Allow external CLAUDE.md file imports?" prompt. The approval persists for the project and subsequent `claude -p` invocations will respect it. Without this approval, external @-include content is silently dropped.
 
-```
-Execute the /report command
-```
-
-This works correctly at all directory levels because interactive mode prompts for external @-include approval on first use. The `/report` command will:
-- Extract all `# Known Facts` from CLAUDE.md context (including @-included values)
-- Run `team-info.py` to verify script path resolution
-- Reference the `/level` command (Claude loads it as a skill automatically)
-- Compute the rootpath via `git rev-parse`
-
-### Known limitation: `claude -p` and external @-includes
-
-The automated `just run` uses `claude -p` (non-interactive/headless mode). External `@-includes` in CLAUDE.md (like `@team/CLAUDE.md`) require a one-time approval prompt that only appears in interactive mode. Once approved, the approval persists across interactive sessions for the same project. However, `-p` mode never triggers the approval flow, so external @-include content is silently dropped.
-
-This means `just run` produces unreliable results for `name` and `team_name` (which come from the @-include). Values defined directly in each directory's own CLAUDE.md (color, movie, temperature) work fine, as do commands, script execution, and CLAUDE.md inheritance from parent directories.
+Neither Claude or I have found where this approval is kept yet, but if I find it, I'll update the script to do this check automatically and be a little smarter about it.
 
 ## What This Tests
 
@@ -61,12 +47,4 @@ just setup  # create symlinks, chmod (run automatically by show/run)
 just show   # display tree with all CLAUDE.md and command contents -> show.txt
 just run    # run claude -p from each directory, collect responses -> run.txt
 just all    # both
-```
-
-Or directly:
-
-```
-./test-claude-memory.py show
-./test-claude-memory.py run
-./test-claude-memory.py run --from-root
 ```

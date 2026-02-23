@@ -7,6 +7,7 @@
 # ABOUTME: Finds all dirs with CLAUDE.md, shows contents, and queries claude with a prompt.
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -156,19 +157,47 @@ def run_claude_prompt(directory: Path, prompt: str, from_root: bool) -> str:
         return result.stdout or ""
 
 
+REPORT_SCHEMA = json.dumps({
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "team_name": {"type": "string"},
+        "favorite_color": {"type": "string"},
+        "favorite_movie": {"type": "string"},
+        "temperature": {"type": "string"},
+        "team_script_output": {"type": "string"},
+        "level": {"type": "string"},
+        "rootpath": {"type": "string"},
+    },
+    "required": ["name", "team_name", "favorite_color", "favorite_movie",
+                  "temperature", "team_script_output", "level", "rootpath"],
+})
+
+
 def run_claude_command(directory: Path, command: str) -> str:
     """Run a claude slash command and return its stdout."""
     result = subprocess.run(
         ["claude", "-p", command,
          "--allowedTools", "Bash(git rev-parse*)",
-         "--allowedTools", "Bash(*team-info*)"],
+         "--allowedTools", "Bash(*team-info*)",
+         "--output-format", "json",
+         "--json-schema", REPORT_SCHEMA],
         cwd=directory,
         capture_output=True,
         text=True,
     )
     if result.stderr:
         print(result.stderr, end="", file=sys.stderr)
-    return result.stdout or ""
+    output = result.stdout or ""
+    # --output-format json wraps the result in a JSON envelope; extract the text
+    try:
+        envelope = json.loads(output)
+        structured = envelope.get("structured_output")
+        if structured:
+            return json.dumps(structured) if isinstance(structured, dict) else str(structured)
+        return envelope.get("result", output)
+    except (json.JSONDecodeError, AttributeError):
+        return output
 
 
 def main():
