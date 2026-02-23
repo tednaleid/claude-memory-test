@@ -12,10 +12,10 @@ show: setup
     set -euo pipefail
     ./test-claude-memory.py show | tee show.txt
 
-run: setup
+run model="sonnet": setup
     #!/usr/bin/env bash
     set -euo pipefail
     export PATH="$(pwd)/team:$PATH"
-    ./test-claude-memory.py run | tee run.txt
+    ./test-claude-memory.py run --model {{model}} | tee run.txt
 
 all: show run

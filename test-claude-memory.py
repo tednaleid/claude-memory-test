@@ -174,10 +174,11 @@ REPORT_SCHEMA = json.dumps({
 })
 
 
-def run_claude_command(directory: Path, command: str) -> str:
+def run_claude_command(directory: Path, command: str, model: str = "sonnet") -> str:
     """Run a claude slash command and return its stdout."""
     result = subprocess.run(
         ["claude", "-p", command,
+         "--model", model,
          "--allowedTools", "Bash(git rev-parse*)",
          "--allowedTools", "Bash(*team-info*)",
          "--output-format", "json",
@@ -213,6 +214,10 @@ def main():
         "--from-root", action="store_true",
         help="Run claude from root dir, writing answer.txt in each subdirectory",
     )
+    run_parser.add_argument(
+        "--model", default="sonnet",
+        help="Model to use for claude invocations (default: sonnet)",
+    )
 
     args = parser.parse_args()
     root = Path.cwd()
@@ -236,7 +241,7 @@ def main():
             return [
                 ("/report:",
                  lambda d=directory: run_claude_command(
-                     d, "Execute the /report command")),
+                     d, "Execute the /report command", args.model)),
             ]
         show_tree(tree, root, root, extra_fn=get_extras)
 
